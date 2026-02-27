@@ -1,0 +1,27 @@
+[project]
+name = "testpilot"
+version = "0.1.0"
+description = "测试专精 AI Agent - 一句话驱动的自主测试工具"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.40.0"]
+openai = ["openai>=1.0.0"]
+web = ["fastapi>=0.100.0", "uvicorn>=0.20.0"]
+all = ["anthropic>=0.40.0", "openai>=1.0.0", "fastapi>=0.100.0", "uvicorn>=0.20.0"]
+
+[project.scripts]
+testpilot = "testpilot.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["testpilot", "testpilot.*"]
+
+[tool.setuptools.package-data]
+testpilot = ["prompts/*.md", "skills/**/*.md"]
