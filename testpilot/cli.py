@@ -4,11 +4,8 @@ from pathlib import Path
 import click
 from testpilot import __version__
 from testpilot.config import (
-    validate_config,
     LLMConfig,
     PRESET_MODELS,
-    set_llm_config,
-    get_llm_config,
 )
 
 
@@ -126,8 +123,7 @@ def run_cmd(
         else:
             llm_config = LLMConfig.from_env()
 
-        set_llm_config(llm_config)
-        validate_config()
+        llm_config.validate()
 
     except ValueError as e:
         click.echo(f"❌ 配置错误: {e}", err=True)

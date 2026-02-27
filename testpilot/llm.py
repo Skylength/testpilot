@@ -1,6 +1,7 @@
 """LLM 客户端封装 - 支持多提供商"""
 import time
 from abc import ABC, abstractmethod
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
@@ -307,35 +308,35 @@ class OpenAIProvider(LLMProvider):
 # 提供商工厂
 # ============================================================
 
-_provider_instance: LLMProvider | None = None
+_provider_instance: ContextVar[LLMProvider | None] = ContextVar("testpilot_provider", default=None)
 
 
 def get_provider(config: LLMConfig | None = None) -> LLMProvider:
     """获取 LLM 提供商实例"""
-    global _provider_instance
-
     if config is None:
         config = get_llm_config()
 
-    # 如果配置改变，重新创建
-    if _provider_instance is not None and _provider_instance.config != config:
-        _provider_instance = None
+    provider = _provider_instance.get()
 
-    if _provider_instance is None:
+    # 如果配置改变，重新创建
+    if provider is not None and provider.config != config:
+        provider = None
+
+    if provider is None:
         if config.provider == "anthropic":
-            _provider_instance = AnthropicProvider(config)
+            provider = AnthropicProvider(config)
         elif config.provider in ("openai", "openai-compatible"):
-            _provider_instance = OpenAIProvider(config)
+            provider = OpenAIProvider(config)
         else:
             raise ValueError(f"未知提供商: {config.provider}")
+        _provider_instance.set(provider)
 
-    return _provider_instance
+    return provider
 
 
 def reset_provider():
     """重置提供商实例 (用于切换配置)"""
-    global _provider_instance
-    _provider_instance = None
+    _provider_instance.set(None)
 
 
 # ============================================================

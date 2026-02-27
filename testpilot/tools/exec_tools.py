@@ -2,6 +2,7 @@
 import subprocess
 from .registry import register_tool
 from testpilot.config import COMMAND_TIMEOUT, MAX_OUTPUT_CHARS
+from testpilot.runtime_context import get_project_root
 
 # 禁止的危险命令前缀
 BLOCKED_COMMANDS = [
@@ -23,6 +24,7 @@ def run_command(command: str, timeout: int = COMMAND_TIMEOUT) -> str:
 
     # 限制超时
     timeout = min(timeout, 300)
+    project_root = get_project_root()
 
     try:
         result = subprocess.run(
@@ -30,7 +32,8 @@ def run_command(command: str, timeout: int = COMMAND_TIMEOUT) -> str:
             shell=True,
             capture_output=True,
             text=True,
-            timeout=timeout
+            timeout=timeout,
+            cwd=str(project_root),
         )
 
         output = f"Exit code: {result.returncode}\n\n"

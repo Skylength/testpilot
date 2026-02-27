@@ -4,6 +4,7 @@ import re
 import subprocess
 from pathlib import Path
 from .registry import register_tool
+from testpilot.runtime_context import get_project_root, resolve_path_in_project
 
 # 支持搜索的文件扩展名
 SEARCH_EXTENSIONS = {".py", ".java", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".rb", ".php", ".c", ".cpp", ".h"}
@@ -11,27 +12,43 @@ SEARCH_EXTENSIONS = {".py", ".java", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs",
 
 def search_files(pattern: str, path: str = ".", max_results: int = 20) -> str:
     """在项目中搜索包含指定关键词的文件和行"""
-    search_path = Path(path)
+    try:
+        search_path = resolve_path_in_project(path)
+    except PermissionError:
+        return f"Error: path is outside workspace: {path}"
+
     if not search_path.exists():
         return f"Error: directory not found: {path}"
+    if not search_path.is_dir():
+        return f"Error: not a directory: {path}"
 
-    results = []
+    max_results = max(1, min(max_results, 100))
+    results: list[str] = []
 
-    # 尝试使用 grep
+    # 优先使用 ripgrep（不经过 shell，避免注入）
     try:
-        extensions = " ".join(f'--include="*{ext}"' for ext in SEARCH_EXTENSIONS)
-        cmd = f'grep -rn {extensions} "{pattern}" "{path}" 2>/dev/null | head -n {max_results}'
+        cmd = [
+            "rg",
+            "--line-number",
+            "--no-heading",
+            "--color",
+            "never",
+            "--no-messages",
+        ]
+        for ext in sorted(SEARCH_EXTENSIONS):
+            cmd.extend(["-g", f"*{ext}"])
+        cmd.extend(["--", pattern, str(search_path)])
+
         result = subprocess.run(
             cmd,
-            shell=True,
             capture_output=True,
             text=True,
             timeout=30
         )
-        if result.stdout.strip():
-            results = result.stdout.strip().split("\n")
+        if result.returncode in (0, 1) and result.stdout.strip():
+            results = result.stdout.strip().split("\n")[:max_results]
     except (subprocess.TimeoutExpired, FileNotFoundError):
-        # grep 不可用，使用 Python fallback
+        # rg 不可用，使用 Python fallback
         results = _python_search(search_path, pattern, max_results)
 
     if not results:
@@ -55,6 +72,7 @@ def search_files(pattern: str, path: str = ".", max_results: int = 20) -> str:
 def _python_search(search_path: Path, pattern: str, max_results: int) -> list[str]:
     """Python 实现的文件搜索"""
     results = []
+    workspace = get_project_root()
     try:
         regex = re.compile(pattern, re.IGNORECASE)
     except re.error:
@@ -72,6 +90,11 @@ def _python_search(search_path: Path, pattern: str, max_results: int) -> list[st
                 break
 
             filepath = Path(root) / filename
+            try:
+                filepath.resolve().relative_to(workspace)
+            except ValueError:
+                continue
+
             if filepath.suffix not in SEARCH_EXTENSIONS:
                 continue
 

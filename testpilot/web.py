@@ -1,23 +1,16 @@
 """TestPilot Web 界面"""
 import asyncio
-import json
-import uuid
 from pathlib import Path
-from typing import AsyncGenerator
-from dataclasses import asdict
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from testpilot.config import (
     LLMConfig,
     PRESET_MODELS,
-    set_llm_config,
-    validate_config,
 )
-from testpilot.agent import run_agent, AgentResult
+from testpilot.agent import run_agent
 
 app = FastAPI(title="TestPilot", description="测试专精 AI Agent")
 
@@ -58,7 +51,7 @@ async def list_presets() -> list[PresetInfo]:
 
 @app.post("/api/test")
 async def run_test(req: TestRequest) -> dict:
-    """运行测试 (同步)"""
+    """运行测试"""
     import os
 
     # 构建 LLM 配置
@@ -86,8 +79,7 @@ async def run_test(req: TestRequest) -> dict:
         else:
             llm_config = LLMConfig.from_env()
 
-        set_llm_config(llm_config)
-        validate_config()
+        llm_config.validate()
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -102,7 +94,12 @@ async def run_test(req: TestRequest) -> dict:
 
     # 运行 Agent
     try:
-        result = run_agent(req.request, str(project_path), llm_config=llm_config)
+        result = await asyncio.to_thread(
+            run_agent,
+            req.request,
+            str(project_path),
+            llm_config=llm_config,
+        )
         return {
             "success": True,
             "output": result.output,

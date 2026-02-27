@@ -2,7 +2,8 @@
 import os
 import json
 from pathlib import Path
-from dataclasses import dataclass, field
+from contextvars import ContextVar
+from dataclasses import dataclass
 from typing import Literal
 
 # ============================================================
@@ -65,7 +66,7 @@ PRESET_MODELS = {
     "litellm-opus": {
         "provider": "openai-compatible",
         "model": "us.anthropic.claude-opus-4-5-20251101-v1:0",
-        "api_key": "sk-nUGwSHdde50UpEVxjHmpvA",
+        "api_key_env": "TESTPILOT_API_KEY",
         "base_url": "https://litellm-us.leapwatt.ai/v1",
     },
 }
@@ -88,11 +89,8 @@ class LLMConfig:
 
         preset = PRESET_MODELS[preset_name]
 
-        # 优先使用直接配置的 api_key，否则从环境变量读取
-        if "api_key" in preset:
-            api_key = preset["api_key"]
-        else:
-            api_key = os.environ.get(preset.get("api_key_env", ""), "")
+        # 仅从环境变量读取 API Key，避免明文硬编码
+        api_key = os.environ.get(preset.get("api_key_env", ""), "")
 
         return cls(
             provider=preset["provider"],
@@ -173,22 +171,21 @@ FEATURES_DIR = ".testpilot/features"
 # 结果截断限制
 MAX_OUTPUT_CHARS = 50000
 
-# 全局 LLM 配置实例 (延迟初始化)
-_llm_config: LLMConfig | None = None
+# 请求级 LLM 配置实例 (避免并发串扰)
+_llm_config: ContextVar[LLMConfig | None] = ContextVar("testpilot_llm_config", default=None)
 
 
 def get_llm_config() -> LLMConfig:
-    """获取全局 LLM 配置"""
-    global _llm_config
-    if _llm_config is None:
-        _llm_config = LLMConfig.from_env()
-    return _llm_config
+    """获取请求级 LLM 配置"""
+    config = _llm_config.get()
+    if config is None:
+        return LLMConfig.from_env()
+    return config
 
 
 def set_llm_config(config: LLMConfig):
-    """设置全局 LLM 配置"""
-    global _llm_config
-    _llm_config = config
+    """设置请求级 LLM 配置"""
+    _llm_config.set(config)
 
 
 def load_project_config(project_path: str) -> dict:
@@ -203,7 +200,6 @@ def load_project_config(project_path: str) -> dict:
     return {}
 
 
-def validate_config():
+def validate_config(config: LLMConfig | None = None):
     """验证必要配置是否存在"""
-    config = get_llm_config()
-    config.validate()
+    (config or get_llm_config()).validate()

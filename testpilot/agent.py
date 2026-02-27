@@ -1,5 +1,4 @@
 """Agent 主循环 - TestPilot 核心"""
-import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -7,6 +6,7 @@ from testpilot.config import MAX_TURNS, LLMConfig
 from testpilot.llm import llm_call, LLMResponse
 from testpilot.tools import get_tools_schema, execute_tool
 from testpilot.skills import load_skills
+from testpilot.runtime_context import set_project_root, reset_project_root
 
 # Prompt 文件目录
 PROMPTS_DIR = Path(__file__).parent / "prompts"
@@ -107,16 +107,20 @@ def run_agent(
         AgentResult 包含输出和统计信息
     """
     stats = AgentStats()
+    project_root_path = Path(project_path).resolve()
+    if not project_root_path.exists():
+        raise ValueError(f"项目路径不存在: {project_root_path}")
+    if not project_root_path.is_dir():
+        raise ValueError(f"项目路径不是目录: {project_root_path}")
 
-    # 切换到项目目录
-    original_cwd = os.getcwd()
-    os.chdir(project_path)
+    project_root = str(project_root_path)
+    context_token = set_project_root(project_root)
 
     try:
         # 1. 组装 system prompt
         agents_md = _load_prompt("AGENTS.md")
         soul_md = _load_prompt("SOUL.md")
-        skills = load_skills(project_path, PROMPTS_DIR.parent / "skills")
+        skills = load_skills(project_root, PROMPTS_DIR.parent / "skills")
 
         system_prompt = agents_md
         if soul_md:
@@ -128,7 +132,7 @@ def run_agent(
         messages = [
             {
                 "role": "user",
-                "content": f"项目路径: {project_path}\n请测试: {user_request}"
+                "content": f"项目路径: {project_root}\n请测试: {user_request}"
             }
         ]
 
@@ -172,7 +176,8 @@ def run_agent(
             tool_results = []
             for tc in response.tool_calls:
                 # 打印进度
-                print(f"  [{tc.name}] {_summarize_input(tc.input)}")
+                if verbose:
+                    print(f"  [{tc.name}] {_summarize_input(tc.input)}")
 
                 result = execute_tool(tc.name, tc.input)
                 tool_results.append({
@@ -193,5 +198,4 @@ def run_agent(
         return AgentResult(output=final_output, stats=stats)
 
     finally:
-        # 恢复原始工作目录
-        os.chdir(original_cwd)
+        reset_project_root(context_token)

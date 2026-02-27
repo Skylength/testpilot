@@ -1,25 +1,39 @@
 """文件操作工具 - list_dir, read_file, write_file"""
-import os
 from pathlib import Path
 from .registry import register_tool
 from testpilot.config import MAX_OUTPUT_CHARS
+from testpilot.runtime_context import get_project_root, resolve_path_in_project
 
 # 要跳过的目录
 SKIP_DIRS = {".git", ".venv", "venv", "__pycache__", "node_modules", ".testpilot"}
 
 
+def _is_within_workspace(path: Path, workspace: Path) -> bool:
+    """检查路径（resolve 后）是否在工作区内。"""
+    try:
+        path.resolve().relative_to(workspace)
+        return True
+    except (ValueError, OSError):
+        return False
+
+
 def list_dir(path: str, max_depth: int = 1) -> str:
     """列出目录下的文件和子目录"""
-    path = Path(path)
-    if not path.exists():
+    try:
+        dir_path = resolve_path_in_project(path)
+    except PermissionError:
+        return f"Error: path is outside workspace: {path}"
+
+    if not dir_path.exists():
         return f"Error: directory not found: {path}"
-    if not path.is_dir():
+    if not dir_path.is_dir():
         return f"Error: not a directory: {path}"
 
     max_depth = min(max_depth, 3)  # 最大深度限制
     lines = []
     file_count = 0
     max_files = 500
+    workspace = get_project_root()
 
     def _walk(dir_path: Path, depth: int, prefix: str = ""):
         nonlocal file_count
@@ -37,6 +51,8 @@ def list_dir(path: str, max_depth: int = 1) -> str:
                 break
             if item.name in SKIP_DIRS:
                 continue
+            if not _is_within_workspace(item, workspace):
+                continue
 
             file_count += 1
             if item.is_dir():
@@ -45,7 +61,7 @@ def list_dir(path: str, max_depth: int = 1) -> str:
             else:
                 lines.append(f"{prefix}{item.name}")
 
-    _walk(path, 1)
+    _walk(dir_path, 1)
 
     if file_count >= max_files:
         lines.append(f"\n[truncated at {max_files} items]")
@@ -55,7 +71,11 @@ def list_dir(path: str, max_depth: int = 1) -> str:
 
 def read_file(path: str) -> str:
     """读取文件内容"""
-    file_path = Path(path)
+    try:
+        file_path = resolve_path_in_project(path)
+    except PermissionError:
+        return f"Error: path is outside workspace: {path}"
+
     if not file_path.exists():
         return f"Error: file not found: {path}"
     if not file_path.is_file():
@@ -85,13 +105,15 @@ def read_file(path: str) -> str:
 
 def write_file(path: str, content: str) -> str:
     """写入文件内容，自动创建父目录"""
-    # 安全检查
-    if ".." in path:
-        return "Error: path cannot contain '..'"
-    if ".git/" in path or path.startswith(".git"):
-        return "Error: cannot write to .git directory"
+    try:
+        file_path = resolve_path_in_project(path)
+    except PermissionError:
+        return f"Error: path is outside workspace: {path}"
 
-    file_path = Path(path)
+    workspace = get_project_root()
+    rel_parts = file_path.relative_to(workspace).parts
+    if ".git" in rel_parts:
+        return "Error: cannot write to .git directory"
 
     try:
         # 创建父目录
@@ -101,7 +123,7 @@ def write_file(path: str, content: str) -> str:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
 
-        return f"OK: written {len(content.encode('utf-8'))} bytes to {path}"
+        return f"OK: written {len(content.encode('utf-8'))} bytes to {file_path.relative_to(workspace)}"
     except IOError as e:
         return f"Error: cannot write file: {e}"
 
