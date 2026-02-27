@@ -16,6 +16,15 @@ class ConfigSecurityTests(unittest.TestCase):
             config = LLMConfig.from_preset("litellm-opus")
         self.assertEqual(config.api_key, "")
 
+    def test_validate_raises_when_api_key_missing(self):
+        with patch.dict(os.environ, {}, clear=True):
+            config = LLMConfig.from_preset("litellm-opus")
+
+        with self.assertRaises(ValueError) as ctx:
+            config.validate()
+
+        self.assertIn("API Key 未设置", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

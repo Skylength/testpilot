@@ -32,6 +32,18 @@ class ToolsSecurityTests(unittest.TestCase):
         result = search_files("hello", path="..")
         self.assertIn("outside workspace", result)
 
+    def test_read_file_rejects_symlink_pointing_outside_workspace(self):
+        outside = self.workspace.parent / "outside.txt"
+        outside.write_text("secret\n", encoding="utf-8")
+        (self.workspace / "src" / "leak.txt").symlink_to(outside)
+
+        result = read_file("src/leak.txt")
+        self.assertIn("outside workspace", result)
+
+    def test_write_file_rejects_git_directory(self):
+        result = write_file(".git/config", "evil = 1")
+        self.assertIn("cannot write to .git directory", result)
+
     @patch("testpilot.tools.search_tools.subprocess.run")
     def test_search_files_does_not_use_shell(self, mock_run):
         mock_run.return_value = Mock(returncode=0, stdout="src/app.py:1: hello world\n", stderr="")
