@@ -5,5 +5,6 @@ from .registry import register_tool, get_tools_schema, execute_tool
 from . import file_tools
 from . import search_tools
 from . import exec_tools
+from . import ask_tools
 
 __all__ = ["register_tool", "get_tools_schema", "execute_tool"]

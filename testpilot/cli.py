@@ -146,7 +146,23 @@ def run_cmd(
     try:
         from testpilot import tools  # noqa
 
-        result = run_agent(request, str(project_path), verbose=verbose, llm_config=llm_config)
+        # 进度回调 (verbose 模式)
+        def cli_progress(event_type: str, content: str):
+            if event_type == "tool_call":
+                click.secho(f"  {content}", fg="cyan")
+            elif event_type == "tool_result":
+                preview = content[:200] + "..." if len(content) > 200 else content
+                click.secho(f"    -> {preview}", fg="bright_black")
+            elif event_type == "text":
+                click.secho(f"  [LLM] {content}", fg="yellow")
+
+        result = run_agent(
+            request,
+            str(project_path),
+            verbose=verbose,
+            llm_config=llm_config,
+            on_progress=cli_progress if verbose else None,
+        )
 
         # 输出报告
         click.echo("\n" + "═" * 40)
@@ -181,9 +197,9 @@ def run_cmd(
 )
 @click.option(
     "--port",
-    default=8000,
+    default=9527,
     type=int,
-    help="监听端口，默认 8000"
+    help="监听端口，默认 9527"
 )
 def web_cmd(host: str, port: int):
     """

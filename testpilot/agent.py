@@ -2,6 +2,7 @@
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 from testpilot.config import MAX_TURNS, LLMConfig
 from testpilot.llm import llm_call, LLMResponse
 from testpilot.tools import get_tools_schema, execute_tool
@@ -93,6 +94,7 @@ def run_agent(
     project_path: str,
     verbose: bool = False,
     llm_config: LLMConfig | None = None,
+    on_progress: Callable[[str, str], None] | None = None,
 ) -> AgentResult:
     """
     运行 TestPilot Agent
@@ -102,6 +104,7 @@ def run_agent(
         project_path: 项目路径
         verbose: 是否打印详细日志
         llm_config: LLM 配置 (可选)
+        on_progress: 进度回调 (event_type, content)，event_type 为 "tool_call"|"tool_result"|"text"
 
     Returns:
         AgentResult 包含输出和统计信息
@@ -170,6 +173,8 @@ def run_agent(
             if not response.has_tool_calls:
                 # 纯文本响应 → Agent 认为任务完成
                 final_output = response.text or ""
+                if on_progress and response.text:
+                    on_progress("text", response.text[:200])
                 break
 
             # 执行所有 tool calls, 收集结果
@@ -178,6 +183,8 @@ def run_agent(
                 # 打印进度
                 if verbose:
                     print(f"  [{tc.name}] {_summarize_input(tc.input)}")
+                if on_progress:
+                    on_progress("tool_call", f"[{tc.name}] {_summarize_input(tc.input)}")
 
                 result = execute_tool(tc.name, tc.input)
                 tool_results.append({
@@ -188,6 +195,8 @@ def run_agent(
 
                 if verbose:
                     print(f"    → {result[:200]}..." if len(result) > 200 else f"    → {result}")
+                if on_progress:
+                    on_progress("tool_result", result[:200])
 
             messages.append({"role": "user", "content": tool_results})
 
