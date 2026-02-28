@@ -11,10 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
-from testpilot.config import (
-    LLMConfig,
-    PRESET_MODELS,
-)
+from testpilot.config import LLMConfig
 from testpilot.agent import run_agent
 
 app = FastAPI(title="TestPilot", description="测试专精 AI Agent")
@@ -30,7 +27,6 @@ class TestRequest(BaseModel):
     """测试请求"""
     request: str
     project_path: str = "."
-    preset: str | None = None
     provider: str | None = None
     model: str | None = None
     base_url: str | None = None
@@ -42,38 +38,31 @@ class AnswerRequest(BaseModel):
     answer: str
 
 
-class PresetInfo(BaseModel):
-    """预设信息"""
-    name: str
-    provider: str
-    model: str
-
-
 def _build_llm_config(req: TestRequest) -> LLMConfig:
-    """从请求构建 LLM 配置"""
-    if req.preset:
-        llm_config = LLMConfig.from_preset(req.preset)
-        if req.api_key:
-            llm_config.api_key = req.api_key
-    elif req.provider or req.model or req.base_url:
-        _provider = req.provider or "anthropic"
-        _model = req.model or "claude-sonnet-4-5-20250929"
-        _api_key = req.api_key or os.environ.get("TESTPILOT_API_KEY") or ""
-
-        if _provider == "anthropic" and not _api_key:
+    """从请求构建 LLM 配置（完全依赖前端传入，无预设）"""
+    if not req.provider:
+        raise ValueError("请选择 Provider")
+    if not req.model:
+        raise ValueError("请填写 Model")
+    if not req.api_key:
+        # 尝试从环境变量获取
+        _api_key = ""
+        if req.provider == "anthropic":
             _api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        elif _provider == "openai" and not _api_key:
+        elif req.provider == "openai":
             _api_key = os.environ.get("OPENAI_API_KEY", "")
+        else:
+            _api_key = os.environ.get("TESTPILOT_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
+        if not _api_key:
+            raise ValueError("请填写 API Key")
+        req.api_key = _api_key
 
-        llm_config = LLMConfig.custom(
-            provider=_provider,
-            model=_model,
-            api_key=_api_key,
-            base_url=req.base_url,
-        )
-    else:
-        llm_config = LLMConfig.from_env()
-
+    llm_config = LLMConfig.custom(
+        provider=req.provider,
+        model=req.model,
+        api_key=req.api_key,
+        base_url=req.base_url,
+    )
     llm_config.validate()
     return llm_config
 
@@ -87,15 +76,6 @@ def _sse_event(event_type: str, data: dict | str) -> str:
 # ============================================================
 # API 端点
 # ============================================================
-
-@app.get("/api/presets")
-async def list_presets() -> list[PresetInfo]:
-    """获取所有预设模型"""
-    return [
-        PresetInfo(name=name, provider=cfg["provider"], model=cfg["model"])
-        for name, cfg in PRESET_MODELS.items()
-    ]
-
 
 @app.post("/api/test")
 async def run_test(req: TestRequest) -> dict:
