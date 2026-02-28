@@ -76,25 +76,32 @@ testpilot web --host 0.0.0.0 --port 3000  # 自定义地址
 ## 项目结构
 
 ```
-testpilot/
-├── agent.py              # Agent 主循环 (on_progress 回调)
-├── cli.py                # CLI 入口 (click)
-├── web.py                # Web 服务 (FastAPI, SSE 流式)
-├── config.py             # 配置与预设模型
-├── llm.py                # LLM 调用封装
-├── runtime_context.py    # 运行时上下文管理
-├── prompts/
-│   ├── AGENTS.md         # Agent 系统 prompt (含 Phase 1.5 范围确认)
-│   └── SOUL.md           # Agent 性格 prompt
-├── skills/               # 可扩展技能模块
-├── templates/
-│   └── index.html        # Web 前端 (SSE + AskUser + Markdown 报告)
-└── tools/
-    ├── registry.py       # 工具注册表
-    ├── file_tools.py     # list_dir, read_file, write_file
-    ├── search_tools.py   # search_files
-    ├── exec_tools.py     # run_command
-    └── ask_tools.py      # ask_user (CLI/Web 双模式)
+.
+├── docs/
+│   ├── planning/          # 产品定位、架构、路线图
+│   └── ui-tests/          # UI 测试用例与报告
+├── testpilot/
+│   ├── agent.py           # Agent 主循环 (on_progress 回调)
+│   ├── cli.py             # CLI 入口 (click)
+│   ├── web.py             # Web 服务 (FastAPI, SSE 流式)
+│   ├── config.py          # 配置与预设模型
+│   ├── llm.py             # LLM 调用封装
+│   ├── runtime_context.py # 运行时上下文管理
+│   ├── prompts/
+│   │   ├── AGENTS.md      # Agent 系统 prompt
+│   │   └── SOUL.md        # Agent 性格 prompt
+│   ├── skills/            # 可扩展技能模块
+│   ├── templates/
+│   │   └── index.html     # Web 前端页面
+│   └── tools/
+│       ├── registry.py    # 工具注册表
+│       ├── file_tools.py  # list_dir/read_file/write_file
+│       ├── search_tools.py # search_files
+│       ├── exec_tools.py  # run_command
+│       └── ask_tools.py   # ask_user
+├── tests/                 # 单元测试
+├── .github/workflows/ci.yml
+└── pyproject.toml
 ```
 
 ## 环境变量参考
