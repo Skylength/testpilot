@@ -352,7 +352,7 @@ while turn < MAX_TURNS:
 
 ## 六、Tool 设计
 
-### 6.1 工具列表 (5 个通用工具)
+### 6.1 工具列表 (6 个工具)
 
 | Tool | 输入 | 输出 | 用途 |
 |------|------|------|------|
@@ -361,6 +361,7 @@ while turn < MAX_TURNS:
 | `write_file` | path: str, content: str | success: bool | 写 Feature Doc / 测试代码 |
 | `search_files` | pattern: str, path: str | 匹配文件列表 + 行内容 | 关键词定位功能代码 |
 | `run_command` | command: str, timeout: int | stdout, stderr, returncode | 执行测试命令 |
+| `ask_user` | questions: list, suggestion: str | 用户回答文本 | 范围确认、需求澄清 |
 
 ### 6.2 工具注册机制
 
@@ -613,20 +614,26 @@ Tool/Skill 分离架构。SKILL.md 格式。Workspace 概念 (.testpilot/ 目录
 
 ## 十、MVP (第一层) 实现计划
 
+> **状态: 已超越 MVP。** 当前版本已包含 Web UI、多 LLM、ask_user 交互等原计划"后续迭代"的功能。
+
 ### 10.1 范围
 
 ```
-支持:
-  - 单一语言: Python + pytest
-  - 5 个通用工具
+已实现:
+  - 语言: Python + pytest
+  - 6 个工具 (list_dir, read_file, write_file, search_files, run_command, ask_user)
   - 1 个内置 Skill (testing-python)
-  - Feature Doc 生成与复用
-  - CLI 入口
-  - 同步执行, 无沙箱
+  - Feature Doc 生成
+  - CLI + Web 双模式
+  - SSE 实时进度流
+  - ask_user 交互（CLI + Web）
+  - 多 LLM 支持（Anthropic / OpenAI / DeepSeek / LiteLLM）
+  - 结构化报告模板 + 证据标准
+  - 安全加固（命令白名单、路径校验）
+  - GitHub Actions CI
 
-不支持 (后续迭代):
-  - 多语言
-  - Web UI
+后续迭代:
+  - 多语言 Skill
   - Docker 沙箱
   - Mixture-of-Models
   - 长期记忆 (跨功能)
@@ -720,27 +727,29 @@ $ testpilot "帮我测试登录是否正常" -p ./my-project
 ## 十一、演进路线
 
 ```
-第一层 (MVP)
+第一层 (MVP) ✅ 已完成
 ├─ Python + pytest
-├─ 5 个通用工具
+├─ 6 个工具 (含 ask_user)
 ├─ Feature Doc
-├─ CLI
-└─ 单一 LLM
+├─ CLI + Web 双模式
+├─ SSE 实时进度流
+├─ ask_user 交互
+└─ 多 LLM 支持
 
     ↓
 
-第二层
+第二层 (计划中)
 ├─ 多语言 Skill (Java/Node/Go)
 ├─ 项目级 Skill 自定义
 ├─ 覆盖率驱动循环
 ├─ 测试历史对比 (回归检测)
-└─ LLM 接口抽象 (支持多模型)
+├─ 变更感知 (git diff)
+└─ Feature Doc 缓存优化
 
     ↓
 
 第三层
 ├─ Docker 沙箱隔离
-├─ Web UI
 ├─ Mixture-of-Models
 ├─ 长期记忆 (跨功能知识图谱)
 ├─ API/SDK 接入方式

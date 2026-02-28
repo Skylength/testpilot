@@ -1,6 +1,8 @@
 # TestPilot 开发路线图
 
 > 基于 Week 0 代码审查和产品定位讨论，整理的修正版开发路线。
+>
+> **最后更新: 2026-02-28** — Week 0-4 全部完成，核心功能就绪，进入真实项目验证阶段。
 
 ---
 
@@ -57,7 +59,7 @@ TestPilot            →  帮你检查代码（质保）
 
 ---
 
-## Week 0 完成状态
+## Week 0 完成状态 ✅
 
 最新提交 `b2290d2` 已完成的修复：
 
@@ -69,7 +71,7 @@ TestPilot            →  帮你检查代码（质保）
 | 全局状态并发串扰 | ✅ 已修 | config/provider/project_root 全部用 `ContextVar` |
 | Web 路由阻塞事件循环 | ✅ 已修 | `asyncio.to_thread()` |
 | 非 verbose 噪音日志 | ✅ 已修 | 仅 `if verbose` 打印 |
-| 缺少自动化测试 | 部分 | 3 个测试文件，约 6 个 case |
+| 缺少自动化测试 | ✅ 已修 | 6 个测试文件，覆盖全关键路径 |
 
 ---
 
@@ -77,9 +79,10 @@ TestPilot            →  帮你检查代码（质保）
 
 ---
 
-### Week 1-2：测试基线 + 安全收尾
+### Week 1-2：测试基线 + 安全收尾 ✅
 
 > 目标：关键路径自动化覆盖，可稳定 demo。
+> **完成时间: 2026-02 — 提交 354153f**
 
 #### 安全收尾
 
@@ -148,17 +151,18 @@ jobs:
       - run: pytest tests/ -v
 ```
 
-#### 验收标准（M1）
+#### 验收标准（M1）✅
 
-- [ ] 白名单策略通过测试，非白名单命令被拦截
-- [ ] CI 绿，所有测试通过
-- [ ] `testpilot run "测试计算器" -p ./test-project --preset litellm-opus` 能跑通完整流程
+- [x] 白名单策略通过测试，非白名单命令被拦截
+- [x] CI 绿，所有测试通过
+- [x] `testpilot run "测试计算器" -p ./test-project --preset litellm-opus` 能跑通完整流程
 
 ---
 
-### Week 3：Prompt 工程 + 报告模板
+### Week 3：Prompt 工程 + 报告模板 ✅
 
 > 目标：Agent 行为规范化，报告格式标准化。
+> **完成时间: 2026-02 — 提交 173e83a**
 
 **不做状态机。** 当前 ReAct loop + prompt 约束够用。如果后续发现 Agent 反复跑偏再考虑加硬约束。
 
@@ -336,18 +340,19 @@ testpilot run "测试计算器功能" -p ./test-project --preset litellm-opus -v
 ```
 
 检查清单：
-- [ ] Agent 按 Phase 1 → 2 → 3 → 4 顺序执行
-- [ ] 报告格式符合模板（概览、通过项、发现的问题、未覆盖的风险、覆盖率）
-- [ ] "发现的问题"每条有完整 5 字段证据
-- [ ] "未覆盖的风险"至少 2 条
-- [ ] 测试代码中 mock 了所有外部依赖（calculator 无外部依赖，此项跳过）
-- [ ] 能正确检测出 `divide` 方法未处理除零异常
+- [x] Agent 按 Phase 1 → 2 → 3 → 4 顺序执行
+- [x] 报告格式符合模板（概览、通过项、发现的问题、未覆盖的风险、覆盖率）
+- [x] "发现的问题"每条有完整 5 字段证据
+- [x] "未覆盖的风险"至少 2 条
+- [x] 测试代码中 mock 了所有外部依赖（calculator 无外部依赖，此项跳过）
+- [x] 能正确检测出 `divide` 方法未处理除零异常
 
 ---
 
-### Week 4：Web GUI + AskUser 门禁
+### Week 4：Web GUI + AskUser 门禁 ✅
 
 > 目标：提供可用的 Web 界面，Agent 遇到模糊需求时主动询问。
+> **完成时间: 2026-02 — 提交 53c4c4c**
 
 #### Web GUI 架构
 
@@ -575,23 +580,26 @@ async def submit_answer(task_id: str, body: AnswerRequest):
 | `testpilot/prompts/AGENTS.md` | 修改 | 加入 Phase 1.5 范围确认指令 |
 | `testpilot/cli.py` | 修改 | run_cmd 传入 on_progress（verbose 模式打印进度） |
 
-#### 验收标准（M2）
+#### 验收标准（M2）✅
 
-- [ ] Web：提交后看到实时进度流（不是等 N 分钟一次性返回）
-- [ ] Web：最终报告用 markdown 格式化渲染
-- [ ] CLI：模糊请求触发 ask_user，终端暂停等待输入，回答后继续
-- [ ] Web：模糊请求触发 ask_user，前端弹出问题表单，提交后继续
-- [ ] 明确请求（如"测试登录"）不触发询问，直接执行
+- [x] Web：提交后看到实时进度流（不是等 N 分钟一次性返回）
+- [x] Web：最终报告用 markdown 格式化渲染
+- [x] CLI：模糊请求触发 ask_user，终端暂停等待输入，回答后继续
+- [x] Web：模糊请求触发 ask_user，前端弹出问题表单，提交后继续
+- [x] 明确请求（如"测试登录"）不触发询问，直接执行
 
 ---
 
-### Week 5-6：报告质量打磨 + 端到端验收
+### Week 5-6：报告质量打磨 + 端到端验收 — 跳过，直接真实项目验证
 
-> 目标：个人开发者闭环体验达标，可对外试用。
+> 原计划：创建人造测试项目（calculator、FastAPI CRUD）做端到端验收。
+> **实际决策：核心功能已就绪，跳过人造项目，直接用真实项目验证。**
+>
+> 真实项目比人造 bug 更能暴露问题。以下优化项列入后续迭代。
 
-#### 失败分类（Prompt 细化）
+#### 失败分类（Prompt 细化）✅ 已完成
 
-在 AGENTS.md 的 Phase 3 中细化判断标准：
+已在 AGENTS.md 的 Phase 3 中实现完整的失败分类标准（4 级判断 + 合理性判断指南）。
 
 ```markdown
 #### 失败分类标准
@@ -620,9 +628,11 @@ async def submit_answer(task_id: str, body: AnswerRequest):
 - 如果不确定，标记为"疑似问题"并说明你的判断依据
 ```
 
-#### 验收用的测试项目
+#### 验收用的测试项目 — 跳过
 
-准备 3 个复杂度递增的项目：
+~~准备 3 个复杂度递增的项目：~~
+
+决定直接使用真实项目验证，不再创建人造测试项目。
 
 | 项目 | 复杂度 | 预期发现 |
 |------|--------|----------|
@@ -642,7 +652,9 @@ async def submit_answer(task_id: str, body: AnswerRequest):
 7. Token 消耗记录（作为成本基线）
 ```
 
-#### 变更感知（如果时间允许）
+#### 变更感知 — 后续迭代
+
+> 非核心功能，Agent 目前能全量扫描测试，不影响使用。列入后续优化。
 
 ```python
 # 在 agent.py 中，如果项目是 git 仓库，自动获取最近改动
@@ -665,36 +677,35 @@ def get_recent_changes(project_path: str) -> str | None:
 # "最近修改的文件: auth/service.py, auth/router.py\n请优先测试这些文件。"
 ```
 
-#### 性能优化检查清单
+#### 性能优化检查清单 — 后续迭代
 
 - [ ] Feature Doc 缓存：二次运行同一功能确实跳过探索阶段（对比 token 消耗）
 - [ ] 精准读码：Agent 不读无关文件（检查 verbose 日志中的 read_file 列表）
 - [ ] 基线记录：每个测试项目记录 `耗时 / 轮次 / input_tokens / output_tokens`
 
-#### 验收标准（M3）
+#### 验收标准（M3）— 改为真实项目验证
 
-- [ ] 3 个测试项目全部跑通，报告符合质量标准
+- [ ] 在真实 Python 项目上跑通端到端流程
 - [ ] CLI 体验：一句话输入 → 5 分钟内出报告
 - [ ] Web 体验：实时进度 → 格式化报告 → 可交互
-- [ ] 误报率 < 30%（人工核实 3 个项目的所有发现）
-- [ ] 二次运行明显更快（Feature Doc 缓存生效）
+- [ ] 报告发现有实际参考价值（人工核实）
 
 ---
 
 ## 里程碑总览
 
 ```
-M1（Week 2 末）
+M1（Week 2 末）✅ 已达成
   安全和测试基线清零，CI 绿，可稳定 demo。
 
-M2（Week 4 末）
+M2（Week 4 末）✅ 已达成
   Web GUI 实时进度 + 报告渲染。
   AskUser 门禁可用，模糊请求主动询问。
   Prompt 驱动的规范流程，报告格式标准化。
 
-M3（Week 6 末）
-  3 个项目验收通过，误报率 < 30%。
-  个人开发者闭环体验达标，可对外试用。
+M3（真实项目验证）⏳ 进行中
+  跳过人造测试项目，直接用真实项目验证。
+  核心功能已就绪，进入实战检验阶段。
 ```
 
 ---
@@ -702,7 +713,7 @@ M3（Week 6 末）
 ## 各周修改文件速查
 
 ```
-Week 1-2（测试基线）
+Week 1-2（测试基线）✅
   修改: testpilot/tools/exec_tools.py        ← 白名单加固
   新建: tests/test_exec_tools.py             ← exec 工具测试
   新建: tests/test_search_tools.py           ← search 工具测试
@@ -712,12 +723,12 @@ Week 1-2（测试基线）
   扩充: tests/test_config_security.py        ← 更多配置场景
   新建: .github/workflows/ci.yml             ← CI 配置
 
-Week 3（Prompt 工程）
+Week 3（Prompt 工程）✅
   重写: testpilot/prompts/AGENTS.md          ← 阶段标记 + 报告模板
   重写: testpilot/prompts/SOUL.md            ← 强化报告定位
   修改: testpilot/skills/testing-python/SKILL.md ← 安全约束 + 证据标准
 
-Week 4（Web GUI + AskUser）
+Week 4（Web GUI + AskUser）✅
   修改: testpilot/agent.py                   ← on_progress 回调
   重写: testpilot/web.py                     ← SSE 流式 + answer 端点
   新建: testpilot/templates/index.html       ← 独立前端页面
@@ -726,10 +737,9 @@ Week 4（Web GUI + AskUser）
   修改: testpilot/cli.py                     ← on_progress 传入
   修改: testpilot/prompts/AGENTS.md          ← Phase 1.5 范围确认
 
-Week 5-6（报告打磨）
-  修改: testpilot/prompts/AGENTS.md          ← 失败分类标准
-  修改: testpilot/agent.py                   ← 变更感知（可选）
-  新建: test-project-api/                    ← 中等复杂度验收项目
+Week 5-6（跳过，直接真实项目验证）
+  已完成: testpilot/prompts/AGENTS.md        ← 失败分类标准
+  后续:   testpilot/agent.py                 ← 变更感知（可选）
 ```
 
 ---
@@ -746,6 +756,15 @@ Week 5-6（报告打磨）
 ---
 
 ## 提前考虑但不立即实现
+
+### 后续优化项（从 Week 5-6 保留）
+
+| 功能 | 优先级 | 说明 |
+|------|--------|------|
+| 变更感知 (git diff) | 中 | 自动检测最近改动文件，优先测试 |
+| Feature Doc 缓存验证 | 中 | 二次运行跳过探索，节省 token |
+| 覆盖率驱动迭代 | 低 | 基于 --cov 结果自动补充测试 |
+| 性能基线记录 | 低 | 记录耗时/轮次/token，量化优化效果 |
 
 ### 测试执行安全
 

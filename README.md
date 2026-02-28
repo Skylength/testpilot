@@ -73,6 +73,22 @@ testpilot web --host 0.0.0.0 --port 3000  # 自定义地址
 
 也可通过 `--provider`、`--model`、`--base-url` 指定任意 OpenAI 兼容端点。
 
+## 开发状态
+
+核心功能已全部就绪（Week 0-4 完成），当前处于真实项目验证阶段。
+
+已实现：
+- 4 阶段 Agent 工作流（Explore → Read → Generate+Execute → Report）
+- 6 个工具（list_dir, read_file, write_file, search_files, run_command, ask_user）
+- 命令白名单安全加固 + 路径校验
+- SSE 实时进度流 + Web UI
+- ask_user 交互（CLI 终端 + Web 弹窗）
+- 多 LLM 支持（Anthropic / OpenAI / DeepSeek / LiteLLM）
+- 结构化可靠性报告（含证据标准）
+- GitHub Actions CI
+
+详见 [开发路线图](docs/planning/TestPilot-Dev-Roadmap.md)。
+
 ## 项目结构
 
 ```

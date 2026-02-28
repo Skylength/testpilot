@@ -1,6 +1,8 @@
 # TestPilot MVP 开发文档
 
 > 面向开发者的实现指南。按此文档可从零构建出可运行的最小版本。
+>
+> **注意: 此文档为 MVP 阶段的历史参考。** 当前版本已超越 MVP，新增了 Web UI（SSE 实时进度）、ask_user 交互、多 LLM 支持等功能。最新架构见 [TestPilot-Architecture.md](TestPilot-Architecture.md)，开发进度见 [TestPilot-Dev-Roadmap.md](TestPilot-Dev-Roadmap.md)。
 
 ---
 
