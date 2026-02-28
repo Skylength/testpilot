@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TestPilot - 测试专精 AI Agent</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -532,7 +533,7 @@
                     finishStream();
                     break;
                 case 'error':
-                    showError(payload.message || payload);
+                    showError(payload.message || payload.content || payload);
                     break;
                 case 'ping':
                     break;
@@ -548,7 +549,16 @@
             questions.forEach((q, i) => {
                 const div = document.createElement('div');
                 div.className = 'question-item';
-                div.innerHTML = `<label>Q${i+1}: ${q}</label><input type="text" id="answer_${i}" placeholder="请输入回答...">`;
+                const label = document.createElement('label');
+                label.textContent = `Q${i + 1}: ${q}`;
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `answer_${i}`;
+                input.placeholder = '请输入回答...';
+
+                div.appendChild(label);
+                div.appendChild(input);
                 container.appendChild(div);
             });
 
@@ -597,7 +607,12 @@
             const resultCard = document.getElementById('resultCard');
             const reportContent = document.getElementById('reportContent');
             resultCard.classList.remove('hidden');
-            reportContent.innerHTML = marked.parse(content);
+            const html = marked.parse(content);
+            if (window.DOMPurify) {
+                reportContent.innerHTML = DOMPurify.sanitize(html);
+            } else {
+                reportContent.textContent = content;
+            }
         }
 
         function showStats(s) {

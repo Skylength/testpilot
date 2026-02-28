@@ -24,4 +24,4 @@ build-backend = "setuptools.build_meta"
 include = ["testpilot", "testpilot.*"]
 
 [tool.setuptools.package-data]
-testpilot = ["prompts/*.md", "skills/**/*.md"]
+testpilot = ["prompts/*.md", "skills/**/*.md", "templates/*.html"]

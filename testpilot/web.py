@@ -22,9 +22,6 @@ app = FastAPI(title="TestPilot", description="测试专精 AI Agent")
 # 模板目录
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
-# 存储运行中的任务
-_tasks: dict[str, dict] = {}
-
 # AskUser 待处理问答: task_id -> { "event": threading.Event, "answer": str }
 _pending_asks: dict[str, dict] = {}
 
@@ -111,6 +108,8 @@ async def run_test(req: TestRequest) -> dict:
     project_path = Path(req.project_path).resolve()
     if not project_path.exists():
         raise HTTPException(status_code=400, detail=f"项目路径不存在: {project_path}")
+    if not project_path.is_dir():
+        raise HTTPException(status_code=400, detail=f"项目路径不是目录: {project_path}")
 
     from testpilot import tools  # noqa
 
@@ -147,6 +146,8 @@ async def stream_test(req: TestRequest):
     project_path = Path(req.project_path).resolve()
     if not project_path.exists():
         raise HTTPException(status_code=400, detail=f"项目路径不存在: {project_path}")
+    if not project_path.is_dir():
+        raise HTTPException(status_code=400, detail=f"项目路径不是目录: {project_path}")
 
     from testpilot import tools  # noqa
 
@@ -203,7 +204,7 @@ async def stream_test(req: TestRequest):
                 "total_tokens": result.stats.total_tokens,
             }, ensure_ascii=False)))
         except Exception as e:
-            progress_queue.put(("error", str(e)))
+            progress_queue.put(("error", {"message": str(e)}))
         finally:
             progress_queue.put(("done", ""))
 

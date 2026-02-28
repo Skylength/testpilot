@@ -11,8 +11,10 @@ from testpilot.agent import AgentResult, AgentStats
 
 
 FASTAPI_AVAILABLE = importlib.util.find_spec("fastapi") is not None
+HTTPX_AVAILABLE = importlib.util.find_spec("httpx") is not None
+TESTCLIENT_AVAILABLE = FASTAPI_AVAILABLE and HTTPX_AVAILABLE
 
-if FASTAPI_AVAILABLE:
+if TESTCLIENT_AVAILABLE:
     from fastapi.testclient import TestClient
     from testpilot.web import create_app
 
@@ -23,7 +25,7 @@ def _fake_agent_result(output: str) -> AgentResult:
     return AgentResult(output=output, stats=stats)
 
 
-@unittest.skipUnless(FASTAPI_AVAILABLE, "fastapi not installed")
+@unittest.skipUnless(TESTCLIENT_AVAILABLE, "fastapi/httpx not installed")
 class WebApiTests(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.TemporaryDirectory()
@@ -113,6 +115,26 @@ class WebApiTests(unittest.TestCase):
 
         self.assertEqual(resp.status_code, 400)
         self.assertIn("项目路径不存在", resp.json()["detail"])
+        mock_run_agent.assert_not_called()
+
+    @patch("testpilot.web.run_agent")
+    def test_project_path_not_directory_returns_400(self, mock_run_agent):
+        not_dir = self.workspace / "single-file.txt"
+        not_dir.write_text("x", encoding="utf-8")
+
+        resp = self.client.post(
+            "/api/test",
+            json={
+                "request": "test",
+                "project_path": str(not_dir),
+                "provider": "openai",
+                "model": "gpt-4o-mini",
+                "api_key": "k",
+            },
+        )
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("项目路径不是目录", resp.json()["detail"])
         mock_run_agent.assert_not_called()
 
 
